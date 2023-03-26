@@ -3,7 +3,6 @@
 #include "utils.h"
 
 #include <cassert>
-#include <cstring>
 #include <fstream>
 #include <string>
 #include <iterator>
