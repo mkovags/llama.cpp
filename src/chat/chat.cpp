@@ -13,8 +13,10 @@
 #include <vector>
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+
 #include <signal.h>
 #include <unistd.h>
+
 #elif defined (_WIN32)
 #include <signal.h>
 #endif
@@ -37,7 +39,7 @@ extern "C" __declspec(dllimport) int __stdcall SetConsoleMode(void* hConsoleHand
 
 /* Keep track of current color of output, and emit ANSI code if it changes. */
 enum console_state {
-    CONSOLE_STATE_DEFAULT=0,
+    CONSOLE_STATE_DEFAULT = 0,
     CONSOLE_STATE_PROMPT,
     CONSOLE_STATE_USER_INPUT
 };
@@ -45,30 +47,29 @@ enum console_state {
 static console_state con_st = CONSOLE_STATE_DEFAULT;
 static bool con_use_color = false;
 
-void set_console_state(console_state new_st)
-{
+void set_console_state(console_state new_st) {
     if (!con_use_color) return;
     // only emit color code if state changed
     if (new_st != con_st) {
         con_st = new_st;
-        switch(con_st) {
-        case CONSOLE_STATE_DEFAULT:
-            printf(ANSI_COLOR_RESET);
-            return;
-        case CONSOLE_STATE_PROMPT:
-            printf(ANSI_COLOR_YELLOW);
-            return;
-        case CONSOLE_STATE_USER_INPUT:
-            printf(ANSI_BOLD ANSI_COLOR_GREEN);
-            return;
+        switch (con_st) {
+            case CONSOLE_STATE_DEFAULT:
+                printf(ANSI_COLOR_RESET);
+                return;
+            case CONSOLE_STATE_PROMPT:
+                printf(ANSI_COLOR_YELLOW);
+                return;
+            case CONSOLE_STATE_USER_INPUT:
+                printf(ANSI_BOLD ANSI_COLOR_GREEN);
+                return;
         }
     }
 }
 
-std::vector<double> softmax(const std::vector<float>& logits) {
+std::vector<double> softmax(const std::vector<float> &logits) {
     std::vector<double> probs(logits.size());
     float max_logit = logits[0];
-    for (float v : logits) max_logit = std::max(max_logit, v);
+    for (float v: logits) max_logit = std::max(max_logit, v);
     double sum_exp = 0.0;
     for (size_t i = 0; i < logits.size(); i++) {
         // Subtract the maximum logit value from the current logit value for numerical stability
@@ -81,7 +82,7 @@ std::vector<double> softmax(const std::vector<float>& logits) {
     return probs;
 }
 
-void perplexity(llama_context * ctx, const gpt_params & params) {
+void perplexity(llama_context *ctx, const gpt_params &params) {
     // Download: https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-raw-v1.zip?ref=salesforce-research
     // Run `./main --perplexity -m models/7B/ggml-model-q4_0.bin -f wiki.test.raw`
     // Output: `perplexity: 13.5106 [114/114]`
@@ -105,7 +106,7 @@ void perplexity(llama_context * ctx, const gpt_params & params) {
         auto end_t = std::chrono::high_resolution_clock::now();
         if (i == 0) {
             double seconds = std::chrono::duration<double>(end_t - start_t).count();
-            printf("%.2f seconds per pass - ETA %.2f hours\n", seconds, (seconds * seq_count) / (60.0*60.0));
+            printf("%.2f seconds per pass - ETA %.2f hours\n", seconds, (seconds * seq_count) / (60.0 * 60.0));
         }
         // We get the logits for all the tokens in the context window (params.n_ctx)
         // from llama_eval above.  Now, based on https://huggingface.co/docs/transformers/perplexity,
@@ -125,8 +126,8 @@ void perplexity(llama_context * ctx, const gpt_params & params) {
             // Calculate probability of next token, given the previous ones.
             int n_vocab = llama_n_vocab(ctx);
             std::vector<float> tok_logits(
-                logits + j * n_vocab,
-                logits + (j + 1) * n_vocab);
+                    logits + j * n_vocab,
+                    logits + (j + 1) * n_vocab);
             double prob = softmax(tok_logits)[tokens[start + j + 1]];
             nll += -std::log(prob);
             ++count;
@@ -141,20 +142,22 @@ void perplexity(llama_context * ctx, const gpt_params & params) {
 static bool is_interacting = false;
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)) || defined (_WIN32)
+
 void sigint_handler(int signo) {
     set_console_state(CONSOLE_STATE_DEFAULT);
     printf("\n"); // this also force flush stdout.
     if (signo == SIGINT) {
         if (!is_interacting) {
-            is_interacting=true;
+            is_interacting = true;
         } else {
             _exit(130);
         }
     }
 }
+
 #endif
 
-int main(int argc, char ** argv) {
+int main(int argc, char **argv) {
     // has to be called once at the start of the program to init ggml stuff
     ggml_time_init();
 
@@ -167,7 +170,7 @@ int main(int argc, char ** argv) {
 
     if (params.n_ctx > 2048) {
         fprintf(stderr, "%s: warning: model does not support context sizes greater than 2048 tokens (%d specified);"
-                "expect poor results\n", __func__, params.n_ctx);
+                        "expect poor results\n", __func__, params.n_ctx);
     }
 
     if (params.seed <= 0) {
@@ -188,19 +191,19 @@ int main(int argc, char ** argv) {
 //    params.prompt = R"(// this function checks if the number n is prime
 //bool is_prime(int n) {)";
 
-    llama_context * ctx;
+    llama_context *ctx;
 
     // load the model
     {
         auto lparams = llama_context_default_params();
 
-        lparams.n_ctx      = params.n_ctx;
-        lparams.n_parts    = params.n_parts;
-        lparams.seed       = params.seed;
-        lparams.f16_kv     = params.memory_f16;
+        lparams.n_ctx = params.n_ctx;
+        lparams.n_parts = params.n_parts;
+        lparams.seed = params.seed;
+        lparams.f16_kv = params.memory_f16;
         lparams.logits_all = params.perplexity;
-        lparams.use_mlock  = params.use_mlock;
-        lparams.embedding  = params.embedding;
+        lparams.use_mlock = params.use_mlock;
+        lparams.embedding = params.embedding;
 
         ctx = llama_init_from_file(params.model.c_str(), lparams);
 
@@ -226,7 +229,7 @@ int main(int argc, char ** argv) {
         }
 
         {
-            const std::vector<llama_token> tmp = { 0, };
+            const std::vector<llama_token> tmp = {0,};
             llama_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_threads);
         }
 
@@ -289,7 +292,7 @@ int main(int argc, char ** argv) {
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
         struct sigaction sigint_action;
         sigint_action.sa_handler = sigint_handler;
-        sigemptyset (&sigint_action.sa_mask);
+        sigemptyset(&sigint_action.sa_mask);
         sigint_action.sa_flags = 0;
         sigaction(SIGINT, &sigint_action, NULL);
 #elif defined (_WIN32)
@@ -298,8 +301,8 @@ int main(int argc, char ** argv) {
 
         fprintf(stderr, "%s: interactive mode on.\n", __func__);
 
-        if(params.antiprompt.size()) {
-            for (auto antiprompt : params.antiprompt) {
+        if (params.antiprompt.size()) {
+            for (auto antiprompt: params.antiprompt) {
                 fprintf(stderr, "Reverse prompt: '%s'\n", antiprompt.c_str());
             }
         }
@@ -308,7 +311,8 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Input prefix: '%s'\n", params.input_prefix.c_str());
         }
     }
-    fprintf(stderr, "sampling parameters: temp = %f, top_k = %d, top_p = %f, repeat_last_n = %i, repeat_penalty = %f\n", params.temp, params.top_k, params.top_p, params.repeat_last_n, params.repeat_penalty);
+    fprintf(stderr, "sampling parameters: temp = %f, top_k = %d, top_p = %f, repeat_last_n = %i, repeat_penalty = %f\n",
+            params.temp, params.top_k, params.top_p, params.repeat_last_n, params.repeat_penalty);
     fprintf(stderr, "\n\n");
 
     std::vector<llama_token> embd;
@@ -320,11 +324,11 @@ int main(int argc, char ** argv) {
 
     if (params.interactive) {
         fprintf(stderr, "== Running in interactive mode. ==\n"
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)) || defined (_WIN32)
-               " - Press Ctrl+C to interject at any time.\n"
-#endif
-               " - Press Return to return control to LLaMa.\n"
-               " - If you want to submit another line, end your input in '\\'.\n\n");
+                        #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)) || defined (_WIN32)
+                        " - Press Ctrl+C to interject at any time.\n"
+                        #endif
+                        " - Press Return to return control to LLaMa.\n"
+                        " - If you want to submit another line, end your input in '\\'.\n\n");
         is_interacting = params.interactive_start || params.instruct;
     }
 
@@ -334,7 +338,7 @@ int main(int argc, char ** argv) {
     int remaining_tokens = params.n_predict;
 
 #if defined (_WIN32)
-  if (params.use_color) {
+    if (params.use_color) {
         // Enable ANSI colors on Windows 10+
         unsigned long dwMode = 0;
         void* hConOut = GetStdHandle((unsigned long)-11); // STD_OUTPUT_HANDLE (-11)
@@ -346,7 +350,7 @@ int main(int argc, char ** argv) {
     // the first thing we will do is to output the prompt, so set color accordingly
     set_console_state(CONSOLE_STATE_PROMPT);
 
-    if (params.embedding){
+    if (params.embedding) {
         embd = embd_inp;
 
         if (embd.size() > 0) {
@@ -381,9 +385,9 @@ int main(int argc, char ** argv) {
 
         if ((int) embd_inp.size() <= input_consumed && !is_interacting) {
             // out of user input, sample next token
-            const float top_k          = params.top_k;
-            const float top_p          = params.top_p;
-            const float temp           = params.temp;
+            const float top_k = params.top_k;
+            const float top_p = params.top_p;
+            const float temp = params.temp;
             const float repeat_penalty = params.repeat_penalty;
 
             llama_token id = 0;
@@ -399,7 +403,8 @@ int main(int argc, char ** argv) {
                     logits[llama_token_eos()] = 0;
                 }
 
-                id = llama_sample_top_p_top_k(ctx, last_n_tokens.data(), last_n_tokens.size(), top_k, top_p, temp, repeat_penalty);
+                id = llama_sample_top_p_top_k(ctx, last_n_tokens.data(), last_n_tokens.size(), top_k, top_p, temp,
+                                              repeat_penalty);
 
                 last_n_tokens.erase(last_n_tokens.begin());
                 last_n_tokens.push_back(id);
@@ -438,13 +443,13 @@ int main(int argc, char ** argv) {
 
         // display text
         if (!input_noecho) {
-            for (auto id : embd) {
+            for (auto id: embd) {
                 printf("%s", llama_token_to_str(ctx, id));
             }
             fflush(stdout);
         }
         // reset color to default if we there is no pending user input
-        if (!input_noecho && (int)embd_inp.size() == input_consumed) {
+        if (!input_noecho && (int) embd_inp.size() == input_consumed) {
             set_console_state(CONSOLE_STATE_DEFAULT);
         }
 
@@ -453,13 +458,14 @@ int main(int argc, char ** argv) {
         if (params.interactive && (int) embd_inp.size() <= input_consumed) {
             // check for reverse prompt
             std::string last_output;
-            for (auto id : last_n_tokens) {
+            for (auto id: last_n_tokens) {
                 last_output += llama_token_to_str(ctx, id);
             }
 
             // Check if each of the reverse prompts appears at the end of the output.
-            for (std::string & antiprompt : params.antiprompt) {
-                if (last_output.find(antiprompt.c_str(), last_output.length() - antiprompt.length(), antiprompt.length()) != std::string::npos) {
+            for (std::string &antiprompt: params.antiprompt) {
+                if (last_output.find(antiprompt.c_str(), last_output.length() - antiprompt.length(),
+                                     antiprompt.length()) != std::string::npos) {
                     is_interacting = true;
                     set_console_state(CONSOLE_STATE_USER_INPUT);
                     fflush(stdout);

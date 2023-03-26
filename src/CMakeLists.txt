@@ -6,30 +6,30 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (NOT XCODE AND NOT MSVC AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
+endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(LLAMA_STANDALONE ON)
 
     # configure project version
     # TODO
-else()
+else ()
     set(LLAMA_STANDALONE OFF)
-endif()
+endif ()
 
 if (EMSCRIPTEN)
     set(BUILD_SHARED_LIBS_DEFAULT OFF)
 
     option(LLAMA_WASM_SINGLE_FILE "llama: embed WASM inside the generated llama.js" ON)
-else()
+else ()
     if (MINGW)
         set(BUILD_SHARED_LIBS_DEFAULT OFF)
-    else()
+    else ()
         set(BUILD_SHARED_LIBS_DEFAULT ON)
-    endif()
-endif()
+    endif ()
+endif ()
 
 
 #
@@ -37,31 +37,31 @@ endif()
 #
 
 # general
-option(LLAMA_STATIC                 "llama: static link libraries"                          OFF)
-option(LLAMA_NATIVE                 "llama: enable -march=native flag"                      OFF)
-option(LLAMA_LTO                    "llama: enable link time optimization"                  OFF)
+option(LLAMA_STATIC "llama: static link libraries" OFF)
+option(LLAMA_NATIVE "llama: enable -march=native flag" OFF)
+option(LLAMA_LTO "llama: enable link time optimization" OFF)
 
 # debug
-option(LLAMA_ALL_WARNINGS           "llama: enable all compiler warnings"                   ON)
+option(LLAMA_ALL_WARNINGS "llama: enable all compiler warnings" ON)
 option(LLAMA_ALL_WARNINGS_3RD_PARTY "llama: enable all compiler warnings in 3rd party libs" OFF)
-option(LLAMA_GPROF                  "llama: enable gprof"                                   OFF)
+option(LLAMA_GPROF "llama: enable gprof" OFF)
 
 # sanitizers
-option(LLAMA_SANITIZE_THREAD        "llama: enable thread sanitizer"                        OFF)
-option(LLAMA_SANITIZE_ADDRESS       "llama: enable address sanitizer"                       OFF)
-option(LLAMA_SANITIZE_UNDEFINED     "llama: enable undefined sanitizer"                     OFF)
+option(LLAMA_SANITIZE_THREAD "llama: enable thread sanitizer" OFF)
+option(LLAMA_SANITIZE_ADDRESS "llama: enable address sanitizer" OFF)
+option(LLAMA_SANITIZE_UNDEFINED "llama: enable undefined sanitizer" OFF)
 
 # instruction set specific
-option(LLAMA_AVX                    "llama: enable AVX"                                     ON)
-option(LLAMA_AVX2                   "llama: enable AVX2"                                    ON)
-option(LLAMA_FMA                    "llama: enable FMA"                                     ON)
+option(LLAMA_AVX "llama: enable AVX" ON)
+option(LLAMA_AVX2 "llama: enable AVX2" ON)
+option(LLAMA_FMA "llama: enable FMA" ON)
 
 # 3rd party libs
-option(LLAMA_ACCELERATE             "llama: enable Accelerate framework"                    ON)
-option(LLAMA_OPENBLAS               "llama: use OpenBLAS"                                   OFF)
+option(LLAMA_ACCELERATE "llama: enable Accelerate framework" ON)
+option(LLAMA_OPENBLAS "llama: use OpenBLAS" OFF)
 
-option(LLAMA_BUILD_TESTS            "llama: build tests"    ${LLAMA_STANDALONE})
-option(LLAMA_BUILD_EXAMPLES         "llama: build examples" ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_TESTS "llama: build tests" ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_EXAMPLES "llama: build examples" ${LLAMA_STANDALONE})
 
 #
 # Compile flags
@@ -75,16 +75,16 @@ find_package(Threads REQUIRED)
 if (NOT MSVC)
     if (LLAMA_SANITIZE_THREAD)
         add_compile_options(-fsanitize=thread)
-    endif()
+    endif ()
 
     if (LLAMA_SANITIZE_ADDRESS)
         add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-    endif()
+    endif ()
 
     if (LLAMA_SANITIZE_UNDEFINED)
         add_compile_options(-fsanitize=undefined)
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (APPLE AND LLAMA_ACCELERATE)
     find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -93,14 +93,14 @@ if (APPLE AND LLAMA_ACCELERATE)
 
         add_compile_definitions(GGML_USE_ACCELERATE)
         set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} ${ACCELERATE_FRAMEWORK})
-    else()
+    else ()
         message(WARNING "Accelerate framework not found")
-    endif()
-endif()
+    endif ()
+endif ()
 if (LLAMA_OPENBLAS)
     if (LLAMA_STATIC)
         set(BLA_STATIC ON)
-    endif()
+    endif ()
 
     set(BLA_VENDOR OpenBLAS)
     find_package(BLAS)
@@ -109,49 +109,49 @@ if (LLAMA_OPENBLAS)
 
         add_compile_definitions(GGML_USE_OPENBLAS)
         add_link_options(${BLAS_LIBRARIES})
-    else()
+    else ()
         message(WARNING "OpenBLAS not found")
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (LLAMA_ALL_WARNINGS)
     if (NOT MSVC)
         set(c_flags
-            -Wall
-            -Wextra
-            -Wpedantic
-            -Wshadow
-            -Wcast-qual
-            -Wstrict-prototypes
-            -Wpointer-arith
-            -Wno-unused-function
-        )
+                -Wall
+                -Wextra
+                -Wpedantic
+                -Wshadow
+                -Wcast-qual
+                -Wstrict-prototypes
+                -Wpointer-arith
+                -Wno-unused-function
+                )
         set(cxx_flags
-            -Wall
-            -Wextra
-            -Wpedantic
-            -Wcast-qual
-        )
-    else()
+                -Wall
+                -Wextra
+                -Wpedantic
+                -Wcast-qual
+                )
+    else ()
         # todo : msvc
-    endif()
+    endif ()
 
     add_compile_options(
             "$<$<COMPILE_LANGUAGE:C>:${c_flags}>"
             "$<$<COMPILE_LANGUAGE:CXX>:${cxx_flags}>"
     )
 
-endif()
+endif ()
 
 if (LLAMA_LTO)
     include(CheckIPOSupported)
     check_ipo_supported(RESULT result OUTPUT output)
     if (result)
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-    else()
+    else ()
         message(WARNING "IPO is not supported: ${output}")
-    endif()
-endif()
+    endif ()
+endif ()
 
 # Architecture specific
 # TODO: probably these flags need to be tweaked on some architectures
@@ -162,26 +162,26 @@ if (NOT MSVC)
         add_link_options(-static)
         if (MINGW)
             add_link_options(-static-libgcc -static-libstdc++)
-        endif()
-    endif()
+        endif ()
+    endif ()
     if (LLAMA_GPROF)
         add_compile_options(-pg)
-    endif()
+    endif ()
     if (LLAMA_NATIVE)
         add_compile_options(-march=native)
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
     message(STATUS "ARM detected")
     if (MSVC)
         # TODO: arm msvc?
-    else()
+    else ()
         if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
             add_compile_options(-mcpu=native)
-        endif()
+        endif ()
         # TODO: armv6,7,8 version specific flags
-    endif()
+    endif ()
 elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^(x86_64|i686|AMD64)$")
     message(STATUS "x86 detected")
     if (MSVC)
@@ -189,23 +189,23 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^(x86_64|i686|AMD64)$")
             add_compile_options(/arch:AVX2)
         elseif (LLAMA_AVX)
             add_compile_options(/arch:AVX)
-        endif()
-    else()
+        endif ()
+    else ()
         add_compile_options(-mf16c)
         if (LLAMA_FMA)
             add_compile_options(-mfma)
-        endif()
+        endif ()
         if (LLAMA_AVX)
             add_compile_options(-mavx)
-        endif()
+        endif ()
         if (LLAMA_AVX2)
             add_compile_options(-mavx2)
-        endif()
-    endif()
-else()
+        endif ()
+    endif ()
+else ()
     # TODO: support PowerPC
     message(STATUS "Unknown architecture")
-endif()
+endif ()
 
 add_subdirectory(chat)
 add_subdirectory(quantize)

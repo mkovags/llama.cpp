@@ -8,13 +8,15 @@
 #include <iterator>
 #include <algorithm>
 
- #if defined(_MSC_VER) || defined(__MINGW32__)
- #include <malloc.h> // using malloc.h with MSC/MINGW
- #elif !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
- #include <alloca.h>
- #endif
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#include <malloc.h> // using malloc.h with MSC/MINGW
+#elif !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 
-bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
+#include <alloca.h>
+
+#endif
+
+bool gpt_params_parse(int argc, char **argv, gpt_params &params) {
     // determine sensible default number of threads.
     // std::thread::hardware_concurrency may not be equal to the number of cores, or may return 0.
 #ifdef __linux__
@@ -56,7 +58,8 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
                 break;
             }
             std::ifstream file(argv[i]);
-            std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), back_inserter(params.prompt));
+            std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(),
+                      back_inserter(params.prompt));
             if (params.prompt.back() == '\n') {
                 params.prompt.pop_back();
             }
@@ -177,7 +180,7 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
     return true;
 }
 
-void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
+void gpt_print_usage(int /*argc*/, char **argv, const gpt_params &params) {
     fprintf(stderr, "usage: %s [options]\n", argv[0]);
     fprintf(stderr, "\n");
     fprintf(stderr, "options:\n");
@@ -190,7 +193,8 @@ void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
     fprintf(stderr, "                        specified more than once for multiple prompts).\n");
     fprintf(stderr, "  --color               colorise output to distinguish prompt and user input from generations\n");
     fprintf(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1, use random seed for <= 0)\n");
-    fprintf(stderr, "  -t N, --threads N     number of threads to use during computation (default: %d)\n", params.n_threads);
+    fprintf(stderr, "  -t N, --threads N     number of threads to use during computation (default: %d)\n",
+            params.n_threads);
     fprintf(stderr, "  -p PROMPT, --prompt PROMPT\n");
     fprintf(stderr, "                        prompt to start generation with (default: empty)\n");
     fprintf(stderr, "  --random-prompt       start with a randomized prompt.\n");
@@ -200,8 +204,10 @@ void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
     fprintf(stderr, "  -n N, --n_predict N   number of tokens to predict (default: %d)\n", params.n_predict);
     fprintf(stderr, "  --top_k N             top-k sampling (default: %d)\n", params.top_k);
     fprintf(stderr, "  --top_p N             top-p sampling (default: %.1f)\n", params.top_p);
-    fprintf(stderr, "  --repeat_last_n N     last n tokens to consider for penalize (default: %d)\n", params.repeat_last_n);
-    fprintf(stderr, "  --repeat_penalty N    penalize repeat sequence of tokens (default: %.1f)\n", params.repeat_penalty);
+    fprintf(stderr, "  --repeat_last_n N     last n tokens to consider for penalize (default: %d)\n",
+            params.repeat_last_n);
+    fprintf(stderr, "  --repeat_penalty N    penalize repeat sequence of tokens (default: %.1f)\n",
+            params.repeat_penalty);
     fprintf(stderr, "  -c N, --ctx_size N    size of the prompt context (default: %d)\n", params.n_ctx);
     fprintf(stderr, "  --ignore-eos          ignore end of stream token and continue generating\n");
     fprintf(stderr, "  --memory_f32          use f32 instead of f16 for memory key+value\n");
@@ -210,7 +216,8 @@ void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
     fprintf(stderr, "  -b N, --batch_size N  batch size for prompt processing (default: %d)\n", params.n_batch);
     fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
     if (ggml_mlock_supported()) {
-        fprintf(stderr, "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
+        fprintf(stderr,
+                "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
     }
     fprintf(stderr, "  --mtest               compute maximum memory usage\n");
     fprintf(stderr, "  --verbose-prompt      print prompt before generation\n");
@@ -219,29 +226,40 @@ void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
     fprintf(stderr, "\n");
 }
 
-std::string gpt_random_prompt(std::mt19937 & rng) {
+std::string gpt_random_prompt(std::mt19937 &rng) {
     const int r = rng() % 10;
     switch (r) {
-        case 0: return "So";
-        case 1: return "Once upon a time";
-        case 2: return "When";
-        case 3: return "The";
-        case 4: return "After";
-        case 5: return "If";
-        case 6: return "import";
-        case 7: return "He";
-        case 8: return "She";
-        case 9: return "They";
-        default: return "To";
+        case 0:
+            return "So";
+        case 1:
+            return "Once upon a time";
+        case 2:
+            return "When";
+        case 3:
+            return "The";
+        case 4:
+            return "After";
+        case 5:
+            return "If";
+        case 6:
+            return "import";
+        case 7:
+            return "He";
+        case 8:
+            return "She";
+        case 9:
+            return "They";
+        default:
+            return "To";
     }
 
     return "The";
 }
 
 // TODO: not great allocating this every time
-std::vector<llama_token> llama_tokenize(struct llama_context * ctx, const std::string & text, bool add_bos) {
+std::vector<llama_token> llama_tokenize(struct llama_context *ctx, const std::string &text, bool add_bos) {
     // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-    std::vector<llama_token> res(text.size() + (int)add_bos);
+    std::vector<llama_token> res(text.size() + (int) add_bos);
     int n = llama_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
     assert(n >= 0);
     res.resize(n);

@@ -6,12 +6,12 @@
 #include <map>
 
 static const std::map<std::string, std::vector<llama_token>> k_tests = {
-    { "Hello World",        { 1,  10994,   2787, }, },
-    { " Hello World",       { 1,  15043,   2787, }, },
-    { " Hello World!",      { 1,  15043,   2787,  29991, }, },
-    { " this is 🦙.cpp",    { 1,    445,    338,  29871,    243,    162,    169,    156,  29889,   8223, }, },
-    { "w048 7tuijk dsdfhu", { 1,  29893,  29900,  29946,  29947,  29871,  29955,   9161,  13535,  18031,   2176,   6905, }, },
-    { "нещо на Български",  { 1,    821,   4851,    665,   1386,  29713,   1305, }, },
+        {"Hello World",        {1, 10994, 2787,},},
+        {" Hello World",       {1, 15043, 2787,},},
+        {" Hello World!",      {1, 15043, 2787,  29991,},},
+        {" this is 🦙.cpp",    {1, 445,   338,   29871, 243,   162,   169,   156,  29889, 8223,},},
+        {"w048 7tuijk dsdfhu", {1, 29893, 29900, 29946, 29947, 29871, 29955, 9161, 13535, 18031, 2176, 6905,},},
+        {"нещо на Български",  {1, 821,   4851,  665,   1386,  29713, 1305,},},
 };
 
 int main(int argc, char **argv) {
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "%s : reading vocab from: '%s'\n", __func__, fname.c_str());
 
-    llama_context * ctx;
+    llama_context *ctx;
 
     // load the vocab
     {
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-    for (const auto & test_kv : k_tests) {
+    for (const auto &test_kv: k_tests) {
         const auto res = ::llama_tokenize(ctx, test_kv.first, true);
 
         bool correct = res.size() == test_kv.second.size();
@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
         if (!correct) {
             fprintf(stderr, "%s : failed test: '%s'\n", __func__, test_kv.first.c_str());
             fprintf(stderr, "%s : expected tokens: ", __func__);
-            for (const auto & t : test_kv.second) {
+            for (const auto &t: test_kv.second) {
                 fprintf(stderr, "%6d, ", t);
             }
             fprintf(stderr, "\n");
             fprintf(stderr, "%s : got tokens:      ", __func__);
-            for (const auto & t : res) {
+            for (const auto &t: res) {
                 fprintf(stderr, "%6d, ", t);
             }
             fprintf(stderr, "\n");
